@@ -151,55 +151,28 @@
                      :ui/number      1
                      })}
   (dom/div {:style {:height "600px" :width "100%"}}
-           (leafletMap {:style  {:height "90%" :width "100%"}
-                        :center [51.055 13.74] :zoom 12}
-                       (layersControl {}
-                                      (layersControlBaseLayer {:name "OSM Tiles"}
-                                                              (tileLayer {:url         "https://{s}.tile.osm.org/{z}/{x}/{y}.png"
-                                                                          :attribution "&copy; <a href=\"http://osm.org/copyright\">OpenStreetMap</a> contributors"}))
-                                      (layersControlBaseLayer {:name    "Esri Aearial"
-                                                               :checked true}
-                                                              (tileLayer {:url         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png"
-                                                                          :attribution "&copy; <a href=\"http://esri.com\">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"}))
-                                      (layersControlBaseLayer {:name "PublicTransport (MeMOMaps)"}
-                                                              (tileLayer {:url         "https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png"
-                                                                          :attribution "<a href=\"https://memomaps.de\">MeMOMaps"}))
-                                      (layersControlBaseLayer {:name "PublicTransport (openptmap)"}
-                                                              (tileLayer {:url         "http://openptmap.org/tiles/{z}/{x}/{y}.png"
-                                                                          :attribution "<a href=\"https://wiki.openstreetmap.org/wiki/Openptmap\">Openptmap"}))
-                                      (layersControlBaseLayer {:name "NONE (only overlays)"}
-                                                              (tileLayer {:url ""}))
-                                      (layersControlOverlay {:name    "Graphhopper MVT example"
-                                                             :checked true}
-                                                            (vectorGrid {:type                  "protobuf" :url "http://localhost:8989/mvt/{z}/{x}/{y}.mvt" :subdomains ""
-                                                                         :vectorTileLayerStyles {"roads" (fn [properties zoom] {})}
-                                                                         :zIndex                1}))
-                                      (layersControlOverlay {:name    "Pathom GeoJSON example"
-                                                             :checked true}
-                                                            (if (:features geojson)
-                                                              (vectorGrid {:type   "slicer" :data geojson
-                                                                           :zIndex 1})))
-                                      (map (fn [toot]
-                                             (marker {:position [(:lat toot) (:long toot)]}
-                                                     (popup {}
-                                                            (dom/p (:content toot))
-                                                            )
-                                                     )
-                                             )
-                                           toots
-                                           )
-                                      (marker {:position [51.055 13.74]}
-                                              (popup {}
-                                                     (dom/h2 (str "count " (count toots) " " number))
-                                                     (ui-number nil)
-                                                     (dom/p "this is a test")
-                                                     (dom/button {:onClick #(comp/transact! this `[(new-toot {:toot ~demoToot})])} "demo toot")
-                                                     (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
-                                                     ))))
-           (dom/p "Please! " number)
+           (dom/h2 (str "count " (count toots) " " number))
+           (ui-number nil)
+           (dom/p "this is a test")
+           (dom/button {:onClick #(comp/transact! this `[(new-toot {:toot ~demoToot})])} "demo toot")
+           (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
            ))
 
-(def ui-osm (comp/factory OSM))
+(defsc DemoSimple
+  [this {:ui/keys [number] :as props}]
+  {:query         [
+                   {:ui/number (comp/get-query NumberDiv)}
+                   ]
+   :ident (fn [] [:component/id :osm])
+   :initial-state (fn [{:as props}]
+                     :ui/number      1
+                     )}
+  (dom/div {:style {:height "600px" :width "100%"}}
+           (dom/h2 (str "number " number))
+           (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
+           ))
+
+(def ui-osm (comp/factory DemoSimple))
 
 (defsc Root [this {:root/keys [top-osm]}]
   {:query         [{:root/top-osm (comp/get-query OSM)}
