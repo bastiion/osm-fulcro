@@ -1,6 +1,7 @@
 (ns app.ui.root
   (:require
     [clojure.string :as str]
+    [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.dom :as dom :refer [div ul li p h3 button]]
     [com.fulcrologic.fulcro.dom.html-entities :as ent]
     [com.fulcrologic.fulcro.dom.events :as evt]
@@ -13,6 +14,7 @@
     [com.fulcrologic.fulcro-css.css :as css]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [taoensso.timbre :as log]
+    [app.mastodon :as mastodon]
     [com.fulcrologic.fulcro.algorithms.react-interop :as interop]
     ["react-leaflet" :as ReactLeaflet :refer [withLeaflet Map
                                               LayersControl LayersControl.BaseLayer LayersControl.Overlay
@@ -25,53 +27,185 @@
 (def layersControlOverlay (interop/react-factory LayersControl.Overlay))
 (def tileLayer (interop/react-factory TileLayer))
 (def vectorGrid (interop/react-factory (withLeaflet VectorGrid)))
+(def marker (interop/react-factory Marker))
+(def popup (interop/react-factory Popup))
 
 (defsc GeoJSON
   "a GeoJSON dataset"
   [this {:as props}]
-  {:query [:type :features :timestamp :generator :copyright]
-   :ident (fn [] [:data :vvo])
+  {:query         [:type :features :timestamp :generator :copyright]
+   :ident         (fn [] [:data :vvo])
    :initial-state {:type {}}})
 
+(defsc GeoToots
+  "a Geo URL enriched mastodon toot"
+  [this {:as props}]
+  {:query         [:mastodon/toots]
+   :ident         (fn [] [:url])
+   :initial-state {:mastodon/toots []}})
+
+(defsc MastodonEvents
+  "mastodon events on a map"
+  [this {:as props}]
+  {:query         [:toots]  #_[:url :tags :mentions :created_at :content]
+   :ident         (fn [] [:url])
+   :initial-state {:toots []}})
+
+
+(defonce toots (atom []))
+
+
+(defn extractGeoURI [message]
+  (let [re-res (re-find #"geo:(\d+(?:\.\d+)?),(\d+(?:\.\d+))" message)]
+    (if (nil? re-res)
+      nil
+      {
+       :lat  (get re-res 1)
+       :long (get re-res 2)
+       }
+      )))
+
+(comment
+
+  (extractGeoURI "dsadsadsa geo:51.5212,13.7286?z=15 das dsadsad")
+
+  )
+
+
+(def demoToot
+  {:mentions               [],
+   :emojis                 [],
+   :tags                   [],
+   :reblog                 nil,
+   :long                   "13.7286",
+   :replies_count          0,
+   :in_reply_to_account_id nil,
+   :reblogs_count          0,
+   :application            nil,
+   :content                "<p>bar8<br />geo:51.0756,13.7286?z=15</p>",
+   :sensitive              false,
+   :favourites_count       0,
+   :in_reply_to_id         nil,
+   :poll                   nil,
+   :card                   nil,
+   :language               "de",
+   :id                     "102928533748870571",
+   :url                    "https://social.gra.one/@teleporter/102928533748870571",
+   :lat                    "51.0756",
+   :media_attachments      [],
+   :uri                    "https://social.gra.one/users/teleporter/statuses/102928533748870571",
+   :visibility             "public",
+   :created_at             "2019-10-08T19:59:45.010Z",
+   :spoiler_text           ""}
+  )
+
+(defmutation bump-number [ignored]
+  (action [{:keys [state]}]
+          (do
+            (prn (:component/id @state))
+            (swap! state update :ui/number inc))))
+
+(defmutation new-toot [{:keys [toot]}]
+  (action [{:keys [state]}]
+          (let [tootWG (merge toot (extractGeoURI (:content toot)))]
+            (do
+              (prn toot)
+              (swap! state into {:mastodon/toots (vec (conj (:mastodon/toots @state) tootWG))}))
+            )))
+
+
+(mastodon/streamPublicTimeline
+  (fn [toot]
+    (let [tootWG (merge toot (extractGeoURI (:content toot)))]
+      (swap! toots conj tootWG)))
+  (fn [toot]
+    (do
+      (prn "Will call mutation")
+      (comp/transact! app.application/SPA [(new-toot {:toot toot})])
+      )))
+
+(defsc NumberDiv
+  [this {:ui/keys [number]}]
+  {:query [:ui/number]
+   :initial-state (fn [_] {:ui/number 3})
+   }
+  (dom/h3 (str "number " number))
+  (dom/button {:onClick #(comp/transact! this `[(new-toot {:toot ~demoToot})])} "demo toot")
+  (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
+  )
+
+
+(def ui-number (comp/factory NumberDiv))
+
 (defsc OSM
-  [this {:osm/keys [geojson] :as props}]
-  {:query [{:osm/geojson (comp/get-query GeoJSON)}]
+  [this {:ui/keys [number] :osm/keys [geojson] :mastodon/keys [toots] :as props}]
+  {:query         [
+                   {:ui/number (comp/get-query NumberDiv)}
+                   {:mastodon/toots (comp/get-query GeoToots)}
+                   {:osm/geojson (comp/get-query GeoJSON)}
+                   ]
    :ident (fn [] [:component/id :osm])
-   :initial-state (fn [{:as props}] {:osm/geojson (comp/get-initial-state GeoJSON)})}
-  (js/console.log geojson)
-  (leafletMap {:style {:height "100%" :width "100%"}
-               :center [51.055 13.74] :zoom 12}
-    (layersControl {}
-      (layersControlBaseLayer {:name "Esri Aearial" 
-                               :checked true}
-        (tileLayer {:url "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png"
-                    :attribution "&copy; <a href=\"http://esri.com\">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"}))
-      (layersControlBaseLayer {:name "OSM Tiles"}
-        (tileLayer {:url "https://{s}.tile.osm.org/{z}/{x}/{y}.png"
-                    :attribution "&copy; <a href=\"http://osm.org/copyright\">OpenStreetMap</a> contributors"}))
-      (layersControlBaseLayer {:name "PublicTransport (MeMOMaps)"}
-        (tileLayer {:url "https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png"
-                    :attribution "<a href=\"https://memomaps.de\">MeMOMaps"}))
-      (layersControlBaseLayer {:name "PublicTransport (openptmap)"}
-        (tileLayer {:url "http://openptmap.org/tiles/{z}/{x}/{y}.png"
-                    :attribution "<a href=\"https://wiki.openstreetmap.org/wiki/Openptmap\">Openptmap"}))
-      (layersControlBaseLayer {:name "NONE (only overlays)"}
-        (tileLayer {:url ""}))
-      (layersControlOverlay {:name "Graphhopper MVT example"
-                             :checked true}
-        (vectorGrid {:type "protobuf" :url "http://localhost:8989/mvt/{z}/{x}/{y}.mvt" :subdomains ""
-                     :vectorTileLayerStyles {"roads" (fn [properties zoom] {})}
-                     :zIndex 1}))
-      (layersControlOverlay {:name "Pathom GeoJSON example"
-                             :checked true}
-        (if (:features geojson)
-            (vectorGrid {:type "slicer" :data geojson
-                         :zIndex 1}))))))
+   :initial-state (fn [{:as props}]
+                    {:osm/geojson    (comp/get-initial-state GeoJSON)
+                     :mastodon/toots []
+                     :ui/number      1
+                     })}
+  (dom/div {:style {:height "600px" :width "100%"}}
+           (leafletMap {:style  {:height "90%" :width "100%"}
+                        :center [51.055 13.74] :zoom 12}
+                       (layersControl {}
+                                      (layersControlBaseLayer {:name "OSM Tiles"}
+                                                              (tileLayer {:url         "https://{s}.tile.osm.org/{z}/{x}/{y}.png"
+                                                                          :attribution "&copy; <a href=\"http://osm.org/copyright\">OpenStreetMap</a> contributors"}))
+                                      (layersControlBaseLayer {:name    "Esri Aearial"
+                                                               :checked true}
+                                                              (tileLayer {:url         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png"
+                                                                          :attribution "&copy; <a href=\"http://esri.com\">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"}))
+                                      (layersControlBaseLayer {:name "PublicTransport (MeMOMaps)"}
+                                                              (tileLayer {:url         "https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png"
+                                                                          :attribution "<a href=\"https://memomaps.de\">MeMOMaps"}))
+                                      (layersControlBaseLayer {:name "PublicTransport (openptmap)"}
+                                                              (tileLayer {:url         "http://openptmap.org/tiles/{z}/{x}/{y}.png"
+                                                                          :attribution "<a href=\"https://wiki.openstreetmap.org/wiki/Openptmap\">Openptmap"}))
+                                      (layersControlBaseLayer {:name "NONE (only overlays)"}
+                                                              (tileLayer {:url ""}))
+                                      (layersControlOverlay {:name    "Graphhopper MVT example"
+                                                             :checked true}
+                                                            (vectorGrid {:type                  "protobuf" :url "http://localhost:8989/mvt/{z}/{x}/{y}.mvt" :subdomains ""
+                                                                         :vectorTileLayerStyles {"roads" (fn [properties zoom] {})}
+                                                                         :zIndex                1}))
+                                      (layersControlOverlay {:name    "Pathom GeoJSON example"
+                                                             :checked true}
+                                                            (if (:features geojson)
+                                                              (vectorGrid {:type   "slicer" :data geojson
+                                                                           :zIndex 1})))
+                                      (map (fn [toot]
+                                             (marker {:position [(:lat toot) (:long toot)]}
+                                                     (popup {}
+                                                            (dom/p (:content toot))
+                                                            )
+                                                     )
+                                             )
+                                           toots
+                                           )
+                                      (marker {:position [51.055 13.74]}
+                                              (popup {}
+                                                     (dom/h2 (str "count " (count toots) " " number))
+                                                     (ui-number nil)
+                                                     (dom/p "this is a test")
+                                                     (dom/button {:onClick #(comp/transact! this `[(new-toot {:toot ~demoToot})])} "demo toot")
+                                                     (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
+                                                     ))))
+           (dom/p "Please! " number)
+           ))
 
 (def ui-osm (comp/factory OSM))
 
 (defsc Root [this {:root/keys [top-osm]}]
-  {:query [{:root/top-osm (comp/get-query OSM)}]
+  {:query         [{:root/top-osm (comp/get-query OSM)}
+                   ]
    :ident (fn [] [:component/id :ROOT])
    :initial-state {:root/top-osm {:osm {}}}}
-  (ui-osm top-osm))
+  (dom/div {:style {:height "100%" :width "100%"}}
+    (ui-osm top-osm))
+  )

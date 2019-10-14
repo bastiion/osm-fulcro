@@ -33,4 +33,4 @@
   (app/set-root! SPA root/Root {:initialize-state? true})
   (dr/initialize! SPA)
   (app/mount! SPA root/Root "app" {:initialize-state? false})
-  (load!))
+  #_(load!))
