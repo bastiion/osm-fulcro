@@ -22,7 +22,20 @@
      (update ::pc/index-resolvers #(into [] (map (fn [[k v]] [k (dissoc v ::pc/resolve)])) %))
      (update ::pc/index-mutations #(into [] (map (fn [[k v]] [k (dissoc v ::pc/mutate)])) %)))})
 
-(defn all-resolvers [] [index-explorer geojson-vvo])
+
+(def all-counters
+  [{:counter-id 1 :counter-label "A"}
+   {:counter-id 2 :counter-label "B"}
+   {:counter-id 3 :counter-label "C"}
+   {:counter-id 4 :counter-label "D"}])
+
+(pc/defresolver counter-resolver [env _]
+  {::pc/output [{:all-counters [:counter-id :counter-label]}]}
+  {:all-counters all-counters})
+
+(def resolvers [counter-resolver])
+
+(defn all-resolvers [] [index-explorer geojson-vvo counter-resolver])
 
 (defn preprocess-parser-plugin
   "Helper to create a plugin that can view/modify the env/tx of a top-level request.

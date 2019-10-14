@@ -114,15 +114,16 @@
             )))
 
 
-(mastodon/streamPublicTimeline
-  (fn [toot]
-    (let [tootWG (merge toot (extractGeoURI (:content toot)))]
-      (swap! toots conj tootWG)))
-  (fn [toot]
-    (do
-      (prn "Will call mutation")
-      (comp/transact! app.application/SPA [(new-toot {:toot toot})])
-      )))
+(def startStreamPublicTimeline
+  (mastodon/streamPublicTimeline
+    (fn [toot]
+      (let [tootWG (merge toot (extractGeoURI (:content toot)))]
+        (swap! toots conj tootWG)))
+    (fn [toot]
+      (do
+        (prn "Will call mutation")
+        (comp/transact! app.application/SPA [(new-toot {:toot toot})])
+        ))))
 
 (defsc NumberDiv
   [this {:ui/keys [number]}]
@@ -130,8 +131,6 @@
    :initial-state (fn [_] {:ui/number 3})
    }
   (dom/h3 (str "number " number))
-  (dom/button {:onClick #(comp/transact! this `[(new-toot {:toot ~demoToot})])} "demo toot")
-  (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
   )
 
 
@@ -158,27 +157,27 @@
            (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
            ))
 
+(def ui-osm (comp/factory OSM))
+
 (defsc DemoSimple
   [this {:ui/keys [number] :as props}]
-  {:query         [
-                   {:ui/number (comp/get-query NumberDiv)}
-                   ]
-   :ident (fn [] [:component/id :osm])
+  {:query         [:ui/number]
    :initial-state (fn [{:as props}]
-                     :ui/number      1
-                     )}
+                    :ui/number 1
+                    )}
   (dom/div {:style {:height "600px" :width "100%"}}
+           (dom/h1 "Roger")
            (dom/h2 (str "number " number))
            (dom/button {:onClick #(comp/transact! this `[(bump-number {})])} "bumb")
            ))
 
-(def ui-osm (comp/factory DemoSimple))
 
-(defsc Root [this {:root/keys [top-osm]}]
-  {:query         [{:root/top-osm (comp/get-query OSM)}
+(def ui-demo (comp/factory DemoSimple))
+
+(defsc Root [this {:as props}]
+  {:query         [{:ui/number (comp/get-query DemoSimple)}
                    ]
-   :ident (fn [] [:component/id :ROOT])
-   :initial-state {:root/top-osm {:osm {}}}}
+   :initial-state (fn [{:as props}] :ui/number -1)}
   (dom/div {:style {:height "100%" :width "100%"}}
-    (ui-osm top-osm))
+    (ui-demo {}))
   )
