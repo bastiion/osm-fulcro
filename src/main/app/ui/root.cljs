@@ -163,7 +163,7 @@
   [this {:ui/keys [number] :as props}]
   {:query         [:ui/number]
    :initial-state (fn [{:as props}]
-                    :ui/number 1
+                    {:ui/number 1}
                     )}
   (dom/div {:style {:height "600px" :width "100%"}}
            (dom/h1 "Roger")
@@ -177,7 +177,11 @@
 (defsc Root [this {:as props}]
   {:query         [{:ui/number (comp/get-query DemoSimple)}
                    ]
-   :initial-state (fn [{:as props}] :ui/number -1)}
-  (dom/div {:style {:height "100%" :width "100%"}}
-    (ui-demo {}))
+   :initial-state (fn [{:as props}]
+                    {:ui/number 1})
+   }
+  (do
+    (prn props)
+    (dom/div {:style {:height "100%" :width "100%"}}
+             (ui-osm props)))
   )

@@ -2,8 +2,8 @@
   (:require
     [app.application :refer [SPA]]
     [com.fulcrologic.fulcro.application :as app]
-    [app.ui.root :as countdown1]
-    [app.ui.ui-union :as countdown]
+    [app.ui.root :as countdown]
+    [app.ui.ui-union :as countdown1]
     [app.ui.countdown-many :as countdown2]
     [com.fulcrologic.fulcro.networking.http-remote :as net]
     [com.fulcrologic.fulcro.data-fetch :as df]
