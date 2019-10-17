@@ -77,9 +77,10 @@
                       (if res
                         (.then (.next res)
                           #(let [response (-> % js->edn)]
-                                (callback response)))
+                                (callback (:value response))))
                         (callback [])
                         )))))
+
 
 
 
