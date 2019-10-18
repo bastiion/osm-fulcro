@@ -14,12 +14,16 @@
            hiccup                              {:mvn/version "1.0.5"}
            http-kit                            {:mvn/version "2.3.0"}
            mount                               {:mvn/version "0.1.12"}
+           com.andrewmcveigh/cljs-time         {:mvn/version "0.5.2"}
            org.clojure/core.async              {:mvn/version "0.4.500"}
 
            ring/ring-core                      {:mvn/version "1.7.1"}
            ring/ring-defaults                  {:mvn/version "0.3.2"}
-           
-           metosin/jsonista                    {:mvn/version "0.2.4"}}
+           ring-webjars                        {:mvn/version "0.2.0"}
+
+           metosin/jsonista                    {:mvn/version "0.2.4"}
+
+           org.webjars/Semantic-UI             {:mvn/version "2.4.1"}}
 
  :aliases {:clj-tests {:extra-paths ["src/test"]
                        :main-opts   ["-m" "kaocha.runner"]
@@ -29,7 +33,7 @@
            :dev       {:extra-paths ["src/test" "src/dev" "src/workspaces"]
                        :jvm-opts    ["-XX:-OmitStackTraceInFastThrow"]
                        :extra-deps  {org.clojure/clojurescript   {:mvn/version "1.10.520"}
-                                     thheller/shadow-cljs        {:mvn/version "2.8.58"}
+                                     thheller/shadow-cljs        {:mvn/version "2.8.60"}
                                      expound                     {:mvn/version "0.7.2"}
                                      fulcrologic/fulcro-spec     {:mvn/version "3.1.4"}
                                      binaryage/devtools          {:mvn/version "0.9.10"}

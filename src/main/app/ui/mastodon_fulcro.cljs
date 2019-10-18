@@ -1,5 +1,6 @@
 (ns app.ui.mastodon-fulcro
   (:require
+    [app.application :refer [SPA]]
     [clojure.string :as str]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.dom :as dom :refer [div ul li p h3 button]]
@@ -19,7 +20,7 @@
     [com.wsscode.pathom.connect :as pc]
     [com.wsscode.pathom.core :as p]
     [clojure.core.async :as async]
-    ))
+    [com.fulcrologic.fulcro.networking.http-remote :as net]))
 
 (defn extractGeoURI [message]
   (let [re-res (re-find #"geo:(\d+(?:\.\d+)?),(\d+(?:\.\d+))" message)]
@@ -48,7 +49,7 @@
           (let [tootWG (toot->geoToot toot)]
             (do
               (prn "loaded")
-              (swap! state into {:mastodon/toots (vec (conj (:mastodon/toots @state) tootWG))}))
+              (swap! state into {:mastodon.toot/timeline (vec (conj (:mastodon.toot/timeline @state) tootWG))}))
             )))
 
 (defonce toots (atom []))
@@ -78,6 +79,7 @@
        (js->clj :keywordize-keys true)
        (:value)
        )}))
+
 
 
 (def mastodon-parser

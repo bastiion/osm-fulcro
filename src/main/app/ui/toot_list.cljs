@@ -46,20 +46,24 @@
                      {:keys [onSelect] :as computed}]
   {:query [:id :uri :content]
    :ident (fn [] [:mastodon.toot/id (:id props)])
-   :initial-state (fn [{:keys [id uri content] :as params}] {:id id :name name :content content})}
+   :initial-state (fn [{:keys [id uri content] :as params}] {:id id :name name :content content :uri uri})}
   (dom/li {:onClick #(prn %) #_#(onSelect (item-ident props))}
-          (dom/a {:href uri} (str "Toot uri " id " " uri))))
+          (dom/a {:href uri} (str "Toot uri " id " uri: " uri))))
 
-(def ui-toot (comp/factory Toot {:keyfn :mastodon.toot/id})) ; ???
+(def ui-toot (comp/factory Toot {:keyfn :id})) ; ??? :mastodon.toot/id
 
 (defsc TootList [this {:mastodon.list/keys [id label toots] :as props}]
   {:query         [:mastodon.list/id
                    :mastodon.list/label
                    {:mastodon.list/toots (comp/get-query Toot)}]
+   :ident (fn [] [:mastodon.list/id (:mastodon.list/id props)])
    :initial-state (fn [{:keys [id label]}] {
                                             :mastodon.list/id id
                                             :mastodon.list/label label
-                                            :mastodon.list/toots []})}
+                                            :mastodon.list/toots
+                                            [
+                                             (comp/get-initial-state Toot {:id "12321313", :content "bla" :uri "http://example.com"})
+                                             ]})}
   (dom/div
     (dom/h4 label)
     (dom/ul :.ui.list
@@ -67,14 +71,14 @@
 
 
 (def ui-toot-list (comp/factory TootList))
-(defsc Root [this {:keys [friends enemies] :mastodon.toot/keys [toots]}]
+(defsc Root [this {:keys [friends enemies toots]}]
   {:query         [{:friends (comp/get-query PersonList)}
                    {:enemies (comp/get-query PersonList)}
-                   {:mastodon.toot/toots (comp/get-query TootList)}
+                   {:toots (comp/get-query TootList)}
                    ]
    :initial-state (fn [params] {:friends (comp/get-initial-state PersonList {:id :friends :label "Friends"})
                                 :enemies (comp/get-initial-state PersonList {:id :enemies :label "Enemies"})
-                                :mastodon.toot/toots (comp/get-initial-state TootList {:id :toots :label "mastodon Toots"})
+                                :toots (comp/get-initial-state TootList {:id :toots :label "mastodon Toots"})
                                 })}
   (dom/div
     (dom/button {:onClick #(comp/transact! this `[(app.ui.mastodon-fulcro/get-mastodon-public-timeline {})])} "load timeline")

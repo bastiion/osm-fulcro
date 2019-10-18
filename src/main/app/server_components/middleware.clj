@@ -9,6 +9,7 @@
     [ring.middleware.defaults :refer [wrap-defaults]]
     [ring.middleware.gzip :refer [wrap-gzip]]
     [ring.middleware.file :refer [wrap-file]]
+    [ring.middleware.webjars :refer [wrap-webjars]]
     [ring.util.response :refer [response file-response resource-response]]
     [ring.util.response :as resp]
     [hiccup.page :refer [html5]]
@@ -41,13 +42,16 @@
       [:title "Application"]
       [:meta {:charset "utf-8"}]
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"}]
-      [:link {:href "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
-              :rel  "stylesheet"}]
+      [:link {:rel "stylesheet" :href "https://cdn.jsdelivr.net/npm/semantic-ui-css@2.4.1/semantic.min.css"}]
       [:link {:rel "stylesheet" :href "leaflet/dist/leaflet.css"}]
+      [:link {:rel "stylesheet" :href "main.css"}]
+      [:link {:rel "stylesheet" :href "react-mde/lib/styles/css/react-mde-all.css"}]
+      ;[:link {:rel "stylesheet" :href "https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.css"}]
       [:link {:rel "shortcut icon" :href "data:image/x-icon;," :type "image/x-icon"}]
       [:script (str "var fulcro_network_csrf_token = '" csrf-token "';")]]
      [:body
       [:div#app {:style "width: 100%; height: 100%"}]
+      [:script {:src "d3/dist/d3.min.js"}]
       [:script {:src "js/main/main.js"}]]]))
 
 ;; ================================================================================
@@ -63,12 +67,12 @@
       [:title "devcards"]
       [:meta {:charset "utf-8"}]
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"}]
-      [:link {:href "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
-              :rel  "stylesheet"}]
+      [:link {:rel "stylesheet" :href "https://cdn.jsdelivr.net/npm/semantic-ui-css@2.4.1/semantic.min.css"}]
       [:link {:rel "shortcut icon" :href "data:image/x-icon;," :type "image/x-icon"}]
       [:script (str "var fulcro_network_csrf_token = '" csrf-token "';")]]
      [:body
       [:div#app]
+      [:script {:src "d3/dist/d3.min.js"}]
       [:script {:src "workspaces/js/main.js"}]]]))
 
 (defn wrap-html-routes [ring-handler]
@@ -92,7 +96,9 @@
         legal-origins   (get config :legal-origins #{"localhost"})]
     (-> not-found-handler
       (wrap-api "/api")
+      (wrap-webjars "/webjars")
       (wrap-file "./node_modules")
+      (wrap-file "./src/css")
       wrap-transit-params
       wrap-transit-response
       (wrap-html-routes)

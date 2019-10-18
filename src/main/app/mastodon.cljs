@@ -11,7 +11,7 @@
    ;; account number you see when you log in and go to your profile
    ;; e.g: https://mastodon.social/web/accounts/294795
    :account-id          "1"
-   :api_url             "https://media-social.gra.one/api/v1/"
+   :api_url             "https://social.gra.one/api/v1/"
    :instance_url        "https://social.gra.one"
    :streaming_url        "https://media-social.gra.one"
    ;; optional boolean to mark content as sensitive
