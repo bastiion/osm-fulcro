@@ -19,6 +19,7 @@
     [cljs-time.format :as tf]
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro.algorithms.react-interop :as interop]
+    [app.ui.mastodon-fulcro]
     #_["react-markdown-editor" :as ReactMarkdownEditor]
     ["leaflet" :as l]
     ["react-mde" :as ReactMde]
