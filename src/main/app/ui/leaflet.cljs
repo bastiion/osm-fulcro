@@ -8,7 +8,7 @@
     [app.ui.leaflet.layers.extern.mvt :refer [mvtLayer]]
     [com.fulcrologic.fulcro.components :refer [defsc factory get-query]]
     [com.fulcrologic.fulcro.algorithms.react-interop :refer [react-factory]]
-    ["react-leaflet" :refer [withLeaflet Map LayersControl LayersControl.Overlay Marker Popup]]
+    ["react-leaflet" :refer [withLeaflet Map LayersControl LayersControl.Overlay Marker Popup GeoJSON Polyline]]
     ["leaflet" :as l]
     [com.fulcrologic.fulcro.dom :as dom]
     [com.fulcrologic.fulcro.components :as comp]))
@@ -18,6 +18,8 @@
 (def layersControlOverlay (react-factory LayersControl.Overlay))
 (def marker (react-factory Marker))
 (def popup (react-factory Popup))
+(def geoJson (react-factory GeoJSON))
+(def polyline (react-factory Polyline))
 
 (defn overlay-filter-rule->filter [filter-rule]
   (if (empty? filter-rule)
@@ -45,14 +47,13 @@
                                   }
                                  ))}))
 
-(def startStopMarker (factory StartStopMarker {:key-fn #((str (:lat %) (:lng %)))}))
+(def startStopMarker (factory StartStopMarker {:key-fn #((hash [(:lat %) (:lng %)]))}))
 
 (defsc Leaflet
   [this props]
   {:query [:leaflet/datasets
            :leaflet/layers
            :selected/points
-           :graphhopper/route
            ]}
   (routing-example (get-in props [:leaflet/datasets :vvo :data :geojson]))
 
@@ -66,7 +67,6 @@
 
                                       ))
                }
-              (prn props)
               (controlOpenSidebar {})
               (layersControl
                 {:key (hash props)}
@@ -88,8 +88,19 @@
                            })
                   (if (nil? (:selected/points props))
                     []
-                    (for [point (:selected/points props)]
-                       (startStopMarker (:selected/latlng point))
+                    (vec (for [point (:selected/points props)]
+                           (startStopMarker (:selected/latlng point))
+                           ))
+                    )
+                  )
+                (layersControlOverlay
+                  {:key "test-y-layer" :name "routing" :checked true}
+                  (let [paths (->> props :leaflet/datasets :routing :data :paths)
+                        points (:points (first paths))
+                        ]
+                    (if (nil? points)
+                      []
+                      (geoJson {:key "routing-path" :data points})
                       )
                     )
                   )
