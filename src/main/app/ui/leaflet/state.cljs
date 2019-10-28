@@ -4,7 +4,9 @@
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.components :refer [transact!]]
     [com.fulcrologic.fulcro.data-fetch :refer [load!]]
-    [com.fulcrologic.fulcro.application :refer [current-state]]))
+    [com.fulcrologic.fulcro.application :refer [current-state]]
+    [app.utils.ring-buffer :as rb]
+    ))
 
 (defmutation mutate-datasets-load
   "For now we don't require arguments, but always reload all datasets"
@@ -59,3 +61,18 @@
             (swap! state into {:selected/points (vec (conj (:selected/points @state) {:selected/latlng props}))})
 
             )))
+
+
+(defmutation new-sensor-data [{:keys [values sensor_type]}]
+  (action [{:keys [state]}]
+          (let [values (vec values)
+                keywd (keyword "sensors" sensor_type)
+                ]
+            (do
+              (let [rbuf
+                    (if (nil? (keywd @state))
+                      (rb/ring-buffer 10)
+                      (keywd @state)
+                      )]
+                (swap! state into {keywd (conj rbuf values)}))
+                ))))
