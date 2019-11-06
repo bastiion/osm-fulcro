@@ -54,6 +54,7 @@
   {:query [:leaflet/datasets
            :leaflet/layers
            :selected/points
+           :sensors/LOCATION
            ]}
   (routing-example (get-in props [:leaflet/datasets :vvo :data :geojson]))
 
@@ -73,6 +74,16 @@
                 baseLayers
                 mvtLayer
                 (layersControlOverlay
+                  {:key "current-location-layer" :name "current-location" :checked true}
+                  (if (some? (:sensors/LOCATION props))
+                    (for [loc (:sensors/LOCATION props)]
+                      (do
+                        (prn loc)
+                        (startStopMarker (get-in loc [:coords])))
+                      )
+                    )
+                  )
+                #_(layersControlOverlay
                   {:key "test-x-layer" :name "test" :checked true}
                   #_(marker {:position [51.055 13.74]
                            :icons (.icon. l (clj->js
@@ -104,7 +115,7 @@
                       )
                     )
                   )
-                #_(for [[layer-name layer] (:leaflet/layers props)]
+                (for [[layer-name layer] (:leaflet/layers props)]
                     (layersControlOverlay {:key layer-name :name layer-name :checked (boolean (:prechecked layer))}
                                           (for [overlay (:overlays layer)
                                                 :let [dataset-features (get-in props [:leaflet/datasets (:dataset overlay) :data :geojson :features])
