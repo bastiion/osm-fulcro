@@ -14,5 +14,4 @@
         from (first (graph/nodes g))
         to (last (graph/nodes g))
         result (alg/dijkstra-path-dist g from to)]
-       (prn "route:" result)
        result))

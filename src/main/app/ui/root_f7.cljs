@@ -1,6 +1,6 @@
 (ns app.ui.root-f7
   (:require
-    [app.ui.leaflet :refer [Leaflet leaflet]]
+    [app.ui.leaflet :refer [Leaflet leaflet LeafletSimple leafletSimple]]
     [app.ui.leaflet.state :refer [State state mutate-layers]]
     [com.fulcrologic.fulcro.components :refer [defsc get-query]]
     [app.ui.framework7.components :refer
@@ -15,6 +15,36 @@
     [app.background-geolocation :refer [clear-locations clear-local-gpx-tracks]]
     [app.ui.leaflet.layers :refer [example-layers]]
     ))
+
+(defsc MapViewSimple [this props]
+  {
+   :initial-state (fn [_] (merge (comp/get-initial-state State)
+                                 {:app.ui.leaflet/id {:main {}}}))
+   :query (fn [] (reduce into [(comp/get-query LeafletSimple)]))
+
+   :ident         (fn [] [:component/id :map-view])
+   :route-segment ["main"]
+   }
+  (f7-view
+    nil
+    (f7-page
+      nil
+      (f7-fab
+        {:position  "left-top"
+         :slot      "fixed"
+         :className "panel-open"
+         :panel "left"
+         }
+        (f7-icon
+          {
+           :icon    "bars"
+           }
+          )
+        )
+      (leafletSimple props)
+      )))
+
+(def mapViewSimple (comp/factory MapViewSimple))
 
 (defsc MapView [this props]
   {
@@ -112,13 +142,13 @@
 
 (defsc AppMain [this {:root/keys [router main] :as props}]
   {:query         (fn []
-                    (let [query (reduce into [(comp/get-query MapView)
+                    (let [query (reduce into [(comp/get-query MapViewSimple)
                                               [{:root/router (comp/get-query TopRouter)}
                                                [::uism/asm-id ::TopRouter]]])]
                       query
                       ))
    :initial-state (fn [_] (merge
-                            (comp/get-initial-state MapView)
+                            (comp/get-initial-state MapViewSimple)
                             {:root/router {}}))}
   (let [current-tab (some-> (dr/current-route this this) first keyword)]
     (f7-app
@@ -162,7 +192,7 @@
                   )
                 )))))
       (f7-views {:tabs true}
-                (mapView props)
+                (mapViewSimple props)
                 #_(ui-top-router router)))))
 
 
